@@ -2,7 +2,6 @@
 
 PATH="$PATH:~/bin/:/usr/local/sbin/:/usr/sbin/:/sbin/"
 
-
 #######################
 ####  C o n f i g  ####
 #######################
@@ -287,14 +286,19 @@ CREATE DATABASE IF NOT EXISTS $DB_NAME
 EOF
 
 
-mysql_install_db --datadir=`pwd`/.sws/data --user=`whoami`
+$MYSQLD_BIN --initialize --datadir=`pwd`/.sws/data --user=`whoami` --basedir=/usr
+#mysql_upgrade --datadir=`pwd`/.sws/data --user=`whoami` --basedir=/usr
 
-( $MYSQLD_BIN --user=mysql --pid-file=`pwd`/.sws/mysqld.pid --socket=${MYSQL_SOCKET_FILE} --port=${MYSQL_PORT} --basedir=/usr --datadir=`pwd`/.sws/data --tmpdir=/tmp --lc-messages-dir=/usr/share/mysql --skip-external-locking --bind-address=127.0.0.1 --key_buffer=16M --max_allowed_packet=16M --thread_stack=192K --thread_cache_size=8 --myisam-recover=BACKUP --query_cache_limit=1M --query_cache_size=16M --log_error=`pwd`/.sws/mysql.log --expire_logs_days=10 --max_binlog_size=100M --init-file=$INIT_DB) &
+$MYSQLD_BIN --basedir=/usr --user=`whoami` --pid-file=`pwd`/.sws/mysqld.pid --socket=${MYSQL_SOCKET_FILE} --port=${MYSQL_PORT} --datadir=`pwd`/.sws/data --tmpdir=/tmp --lc-messages-dir=/usr/share/mysql --skip-external-locking --bind-address=127.0.0.1 --max_allowed_packet=16M --thread_stack=192K --thread_cache_size=8 --query_cache_limit=1M --query_cache_size=16M --log_error=`pwd`/.sws/mysql.log --expire_logs_days=10 --max_binlog_size=100M --init-file=$INIT_DB
+
+
+( $MYSQLD_BIN --basedir=/usr --user=`whoami` --pid-file=`pwd`/.sws/mysqld.pid --socket=${MYSQL_SOCKET_FILE} --port=${MYSQL_PORT} --datadir=`pwd`/.sws/data --tmpdir=/tmp --lc-messages-dir=/usr/share/mysql --skip-external-locking --bind-address=127.0.0.1 --max_allowed_packet=16M --thread_stack=192K --thread_cache_size=8 --myisam-recover=BACKUP --query_cache_limit=1M --query_cache_size=16M --log_error=`pwd`/.sws/mysql.log --expire_logs_days=10 --max_binlog_size=100M --init-file=$INIT_DB) &
 
 sleep 1
 
 for i in `seq 1 10`; do
-	if mysqladmin -u root -h 127.0.0.1 -P ${MYSQL_PORT} version; then
+	break;
+	if mysqladmin -u `whoami` -h 127.0.0.1 -P ${MYSQL_PORT} version; then
 		echo "MySQL server up!!!!"
 		break;
 	else
@@ -325,9 +329,12 @@ LoadModule authn_anon_module ${MODULE_DIR}/mod_authn_anon.so
 LoadModule mpm_prefork_module ${MODULE_DIR}/mod_mpm_prefork.so
 </IfVersion>
 LoadModule authz_core_module ${MODULE_DIR}/mod_authz_core.so
-LoadModule php5_module ${MODULE_DIR}/libphp5.so
+#LoadModule php5_module ${MODULE_DIR}/libphp5.so
+LoadModule php7_module ${MODULE_DIR}/libphp7.0.so
 
 TypesConfig /etc/mime.types
+
+ServerName "localhost"
 
 PidFile $(pwd)/.sws/httpd.pid
 
@@ -367,6 +374,35 @@ ErrorLog $(pwd)/.sws/apache2.log
             php_admin_value engine Off
         </Directory>
     </IfModule>
+</IfModule>
+
+
+<IfModule mod_php7.c>
+	<FilesMatch ".+\.ph(p[3457]?|t|tml)$">
+	    SetHandler application/x-httpd-php
+	</FilesMatch>
+	<FilesMatch ".+\.phps$">
+	    SetHandler application/x-httpd-php-source
+	    # Deny access to raw php sources by default
+	    # To re-enable it's recommended to enable access to the files
+	    # only in specific virtual host or directory
+	    Require all denied
+	</FilesMatch>
+	# Deny access to files without filename (e.g. '.php')
+	<FilesMatch "^\.ph(p[3457]?|t|tml|ps)$">
+	    Require all denied
+	</FilesMatch>
+
+	# Running PHP scripts in user directories is disabled by default
+	# 
+	# To re-enable PHP in user directories comment the following lines
+	# (from <IfModule ...> to </IfModule>.) Do NOT set it to On as it
+	# prevents .htaccess files from disabling it.
+	<IfModule mod_userdir.c>
+	    <Directory /home/*/public_html>
+		php_admin_flag engine Off
+	    </Directory>
+	</IfModule>
 </IfModule>
 
 EOF

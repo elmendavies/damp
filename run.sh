@@ -321,7 +321,9 @@ LoadModule mime_module ${MODULE_DIR}/mod_mime.so
 LoadModule dir_module ${MODULE_DIR}/mod_dir.so
 LoadModule auth_basic_module ${MODULE_DIR}/mod_auth_basic.so
 LoadModule authn_anon_module ${MODULE_DIR}/mod_authn_anon.so
+<IfVersion >= 2.4>
 LoadModule mpm_prefork_module ${MODULE_DIR}/mod_mpm_prefork.so
+</IfVersion>
 LoadModule authz_core_module ${MODULE_DIR}/mod_authz_core.so
 LoadModule php5_module ${MODULE_DIR}/libphp5.so
 

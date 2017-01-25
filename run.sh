@@ -1,5 +1,9 @@
 #!/bin/bash
 
+PATH="$PATH:~/bin/:/usr/local/sbin/:/usr/sbin/:/sbin/"
+
+echo $PATH
+
 #######################
 ###  C L E A N U P  ###
 #######################
@@ -23,30 +27,27 @@ trap cleanup INT
 #######################
 
 HTTP_PORT=20080
-APACHE_BIN="/usr/sbin/apache2 -X -f"
+APACHE_BIN="apache2 -X -f"
 
 if [[ ! -d .sws ]]; then
 	mkdir .sws
 	if [[ ! -e index.html ]]; then
 		echo "Creating index.html"
 		cat > index.php <<EOF
-<?php
 
-echo "Hola mundo";
+<?php
 
 // Conectando, seleccionando la base de datos
 \$link = mysql_connect('127.0.0.1:8806', 'root', '')
     or die('No se pudo conectar: ' . mysql_error());
-echo 'Connected successfully';
+
 mysql_select_db('mme') or die('No se pudo seleccionar la base de datos');
 
 // Realizar una consulta MySQL
 \$query = 'SHOW TABLES;';
 \$result = mysql_query(\$query) or die('Consulta fallida: ' . mysql_error());
 
-echo "Hola mund";
-
-echo \$result;
+if(\$result) echo "Conexi&oacute;n a la base de datos satisfactoria";
 
 EOF
 
@@ -122,7 +123,7 @@ $APACHE_BIN `pwd`/.sws/httpd.conf &
 #####  M Y S Q L  #####
 #######################
 
-MYSQLD_BIN=/usr/sbin/mysqld
+MYSQLD_BIN=mysqld
 MYSQL_PORT=8806
 MYSQL_SOCKET_FILE=`pwd`/.sws/mysqld.sock
 DB_NAME=`whoami`
